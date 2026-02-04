@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Voice AI Call</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1111d4",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101022",
+                        "danger": "#FF4500", // Red-orange for end call
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom pulsing animation for the avatar */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        .pulse-ring::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 50%;
+            border: 2px solid #8B5CF6; /* Purple color matching the avatar feel */
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        .pulse-ring::after {
+            content: '';
+            position: absolute;
+            top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border-radius: 50%;
+            border: 2px solid #6D28D9;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+            animation-delay: 0.5s;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex h-screen w-full flex-col overflow-hidden bg-background-light dark:bg-background-dark">
+<!-- Top App Bar -->
+<div class="flex items-center p-4 pt-6 pb-2 justify-between z-10">
+<button class="text-gray-900 dark:text-white flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10">
+<span class="material-symbols-outlined text-3xl">expand_more</span>
+</button>
+<h2 class="text-gray-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">Ongoing Call</h2>
+</div>
+<!-- Main Content Area: Centered vertically -->
+<div class="flex-1 flex flex-col items-center justify-center w-full px-6">
+<!-- Avatar Section with Pulsing Effect -->
+<div class="relative mb-8">
+<!-- Pulse Animation Container -->
+<div class="absolute inset-0 pulse-ring"></div>
+<!-- Main Avatar -->
+<div class="relative z-10 size-32 rounded-full overflow-hidden shadow-2xl ring-4 ring-white/10 dark:ring-white/5 bg-gradient-to-br from-[#6366f1] to-[#a855f7]">
+<div class="w-full h-full flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1675426513962-1db7e4c7cb85?q=80&amp;w=200&amp;auto=format&amp;fit=crop')] bg-cover bg-center" data-alt="Abstract AI visualization purple gradient">
+<!-- Fallback icon if image doesn't load clearly conveys AI -->
+<span class="material-symbols-outlined text-white text-6xl drop-shadow-md">smart_toy</span>
+</div>
+</div>
+</div>
+<!-- Name and Status -->
+<h1 class="text-gray-900 dark:text-white tracking-tight text-3xl font-bold leading-tight text-center mb-2">PDCP AI Assistant</h1>
+<p class="text-gray-500 dark:text-gray-400 text-lg font-medium leading-normal text-center bg-gray-200/50 dark:bg-white/5 px-4 py-1 rounded-full">04:12</p>
+</div>
+<!-- Controls Section -->
+<div class="w-full pb-10 px-6">
+<!-- Secondary Actions Row -->
+<div class="flex items-center justify-center gap-6 mb-10 w-full max-w-sm mx-auto">
+<button class="flex flex-col items-center gap-2 group">
+<div class="flex items-center justify-center size-16 rounded-full bg-gray-200 dark:bg-[#232348] text-gray-900 dark:text-white transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[28px]">mic_off</span>
+</div>
+<span class="text-sm font-medium text-gray-600 dark:text-gray-300">Mute</span>
+</button>
+<button class="flex flex-col items-center gap-2 group">
+<div class="flex items-center justify-center size-16 rounded-full bg-gray-200 dark:bg-[#232348] text-gray-900 dark:text-white transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[28px]">keyboard</span>
+</div>
+<span class="text-sm font-medium text-gray-600 dark:text-gray-300">Keypad</span>
+</button>
+<button class="flex flex-col items-center gap-2 group">
+<div class="flex items-center justify-center size-16 rounded-full bg-white dark:bg-white text-black transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[28px]">volume_up</span>
+</div>
+<span class="text-sm font-medium text-gray-600 dark:text-gray-300">Speaker</span>
+</button>
+</div>
+<!-- End Call Button -->
+<div class="flex justify-center w-full">
+<button class="flex w-full max-w-sm cursor-pointer items-center justify-center overflow-hidden rounded-full h-16 px-8 bg-danger text-white hover:bg-red-600 transition-colors shadow-lg active:scale-[0.98]">
+<span class="material-symbols-outlined mr-3 text-3xl">call_end</span>
+<span class="text-xl font-bold tracking-wide">End Call</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>

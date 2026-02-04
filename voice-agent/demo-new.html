@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Agent - PDCP Style</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1111d4",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101022",
+                        "danger": "#FF4500",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Custom pulsing animation for the avatar */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        .pulse-ring::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 50%;
+            border: 2px solid #8B5CF6;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        .pulse-ring::after {
+            content: '';
+            position: absolute;
+            top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border-radius: 50%;
+            border: 2px solid #6D28D9;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+            animation-delay: 0.5s;
+        }
+        
+        /* Chat Interface Styles */
+        .chat-container {
+            max-width: 400px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .dark .chat-container {
+            background: #101022;
+        }
+        
+        .message-bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            word-wrap: break-word;
+            margin-bottom: 8px;
+        }
+        
+        .message.user .message-bubble {
+            background: #007bff;
+            color: white;
+            border-bottom-right-radius: 4px;
+            margin-left: auto;
+        }
+        
+        .message.agent .message-bubble {
+            background: #e9ecef;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .dark .message.agent .message-bubble {
+            background: #232348;
+            color: white;
+        }
+        
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+    <!-- Chat Interface -->
+    <div id="chatInterface" class="chat-container">
+        <!-- Header -->
+        <div class="flex items-center p-4 pt-6 pb-2 justify-between border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-3">
+                <select id="parcelSelector" class="bg-primary text-white px-4 py-2 rounded-full text-sm font-medium border-none outline-none cursor-pointer">
+                    <option value="">Select Parcel</option>
+                    <option value="PKG001">PKG001 - Mumbai</option>
+                    <option value="PKG002">PKG002 - Mumbai</option>
+                    <option value="PKG003">PKG003 - Mumbai</option>
+                </select>
+            </div>
+            
+            <div class="flex gap-2">
+                <button class="lang-btn active px-3 py-1 rounded-full text-xs font-medium bg-green-500 text-white" onclick="setLanguage('en')">EN</button>
+                <button class="lang-btn px-3 py-1 rounded-full text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300" onclick="setLanguage('hi')">हि</button>
+                <button class="lang-btn px-3 py-1 rounded-full text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300" onclick="setLanguage('ta')">த</button>
+                <button class="lang-btn px-3 py-1 rounded-full text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300" onclick="setLanguage('te')">తె</button>
+            </div>
+        </div>
+        
+        <!-- Messages Area -->
+        <div id="messagesArea" class="flex-1 p-4 overflow-y-auto" style="height: calc(100vh - 200px);">
+            <div class="message agent">
+                <div class="message-bubble">
+                    Hello! I'm your AI assistant. Please select a parcel to get started, or ask me anything about your deliveries.
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">12:00 PM</div>
+            </div>
+        </div>
+        
+        <!-- Typing Indicator -->
+        <div id="typingIndicator" class="hidden px-4 py-2">
+            <div class="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                Assistant is typing
+                <div class="flex ml-2">
+                    <div class="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div class="w-1 h-1 bg-gray-400 rounded-full animate-bounce ml-1" style="animation-delay: 0.1s"></div>
+                    <div class="w-1 h-1 bg-gray-400 rounded-full animate-bounce ml-1" style="animation-delay: 0.2s"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Input Area -->
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-2">
+                <button id="chatVoiceBtn" class="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 text-white hover:bg-green-600 transition-colors" onclick="toggleChatVoice()">
+                    <span class="material-symbols-outlined text-lg">mic</span>
+                </button>
+                <div class="flex-1 relative">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Type your message..."
+                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-full resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                        rows="1"
+                        onkeypress="handleKeyPress(event)"
+                        oninput="adjustTextareaHeight(this)"
+                    ></textarea>
+                </div>
+                <button id="sendBtn" class="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white hover:bg-blue-600 transition-colors disabled:bg-gray-400" onclick="sendMessage()" disabled>
+                    <span class="material-symbols-outlined text-lg">send</span>
+                </button>
+                <button id="speakBtn" class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-500 text-white hover:bg-gray-600 transition-colors" onclick="toggleAutoSpeak()">
+                    <span class="material-symbols-outlined text-lg">volume_up</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Call Button -->
+        <button id="callButton" class="fixed right-6 top-1/2 transform -translate-y-1/2 w-16 h-16 rounded-full bg-green-500 text-white shadow-lg hover:bg-green-600 transition-all hover:scale-110 disabled:bg-gray-400 z-50" onclick="startCall()" disabled>
+            <span class="material-symbols-outlined text-2xl">call</span>
+        </button>
+    </div>
+    <!-- Call Interface Overlay -->
+    <div id="callOverlay" class="hidden fixed inset-0 bg-background-light dark:bg-background-dark z-50">
+        <!-- Top App Bar -->
+        <div class="flex items-center p-4 pt-6 pb-2 justify-between">
+            <button onclick="endCall()" class="text-gray-900 dark:text-white flex w-12 h-12 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10">
+                <span class="material-symbols-outlined text-3xl">expand_more</span>
+            </button>
+            <h2 class="text-gray-900 dark:text-white text-lg font-bold flex-1 text-center pr-12">Ongoing Call</h2>
+        </div>
+        
+        <!-- Main Content Area: Centered vertically -->
+        <div class="flex-1 flex flex-col items-center justify-center w-full px-6">
+            <!-- Avatar Section with Pulsing Effect -->
+            <div class="relative mb-8">
+                <!-- Pulse Animation Container -->
+                <div id="avatarPulse" class="absolute inset-0"></div>
+                <!-- Main Avatar - NO ROBOT ICON, just gradient -->
+                <div class="relative z-10 w-32 h-32 rounded-full overflow-hidden shadow-2xl ring-4 ring-white/10 dark:ring-white/5 bg-gradient-to-br from-[#6366f1] to-[#a855f7] flex items-center justify-center">
+                    <!-- Clean call interface without robot icon -->
+                </div>
+            </div>
+            
+            <!-- Name and Status -->
+            <h1 class="text-gray-900 dark:text-white text-3xl font-bold text-center mb-2">PDCP AI Assistant</h1>
+            <p id="callDuration" class="text-gray-500 dark:text-gray-400 text-lg font-medium bg-gray-200/50 dark:bg-white/5 px-4 py-1 rounded-full">00:00</p>
+            
+            <!-- Call Status -->
+            <p id="callStatus" class="text-gray-600 dark:text-gray-300 text-center mt-4 text-lg">Tap to speak</p>
+            
+            <!-- Transcript -->
+            <div id="callTranscript" class="hidden mt-4 bg-gray-200/50 dark:bg-white/5 rounded-lg p-4 max-w-sm w-full">
+                <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">You said:</div>
+                <div id="transcriptText" class="text-gray-900 dark:text-white"></div>
+            </div>
+            
+            <!-- Selected Parcel Info -->
+            <div id="selectedParcelInfo" class="hidden mt-4 bg-blue-100 dark:bg-blue-900/30 rounded-lg p-4 max-w-sm w-full">
+                <div class="text-sm text-blue-600 dark:text-blue-400 mb-2">Selected Parcel:</div>
+                <div id="selectedParcelText" class="text-blue-900 dark:text-blue-100 font-medium"></div>
+            </div>
+        </div>
+        
+        <!-- Controls Section -->
+        <div class="w-full pb-10 px-6">
+            <!-- Secondary Actions Row -->
+            <div class="flex items-center justify-center gap-6 mb-10 w-full max-w-sm mx-auto">
+                <button class="flex flex-col items-center gap-2">
+                    <div class="flex items-center justify-center w-16 h-16 rounded-full bg-gray-200 dark:bg-[#232348] text-gray-900 dark:text-white transition-transform active:scale-95">
+                        <span class="material-symbols-outlined text-[28px]">mic_off</span>
+                    </div>
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Mute</span>
+                </button>
+                
+                <button id="voiceBtn" onclick="toggleVoiceRecognition()" class="flex flex-col items-center gap-2">
+                    <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary text-white transition-transform active:scale-95">
+                        <span class="material-symbols-outlined text-[28px]">mic</span>
+                    </div>
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Speak</span>
+                </button>
+                
+                <button class="flex flex-col items-center gap-2">
+                    <div class="flex items-center justify-center w-16 h-16 rounded-full bg-white dark:bg-white text-black transition-transform active:scale-95">
+                        <span class="material-symbols-outlined text-[28px]">volume_up</span>
+                    </div>
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Speaker</span>
+                </button>
+            </div>
+            
+            <!-- End Call Button -->
+            <div class="flex justify-center w-full">
+                <button onclick="endCall()" class="flex w-full max-w-sm items-center justify-center rounded-full h-16 px-8 bg-danger text-white hover:bg-red-600 transition-colors shadow-lg active:scale-[0.98]">
+                    <span class="material-symbols-outlined mr-3 text-3xl">call_end</span>
+                    <span class="text-xl font-bold tracking-wide">End Call</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="demo-config.js"></script>
+    <script>
+        // Global state
+        let selectedParcel = null;
+        let currentLanguage = 'en';
+        let isListening = false;
+        let isSpeaking = false;
+        let callStartTime = null;
+        let callDurationInterval = null;
+        let recognition = null;
+        let synthesis = window.speechSynthesis;
+        
+        // Chat voice features
+        let isChatListening = false;
+        let autoSpeakEnabled = false;
+        let chatRecognition = null;
+        
+        // LLM Service (Cloud-based)
+        class SimpleLLMService {
+            constructor(config) {
+                this.config = config;
+            }
+            
+            async processMessage(text, parcel, language) {
+                try {
+                    const prompt = this.buildPrompt(text, parcel, language);
+                    return await this.callLLM(prompt);
+                } catch (error) {
+                    console.error('LLM Error:', error);
+                    return this.getFallbackResponse(language);
+                }
+            }
+            
+            buildPrompt(text, parcel, language) {
+                const systemPrompt = language === 'en' 
+                    ? "You are a helpful AI assistant for delivery drivers. Keep responses concise and delivery-focused."
+                    : "आप डिलीवरी ड्राइवरों के लिए एक सहायक AI असिस्टेंट हैं। जवाब संक्षिप्त और डिलीवरी पर केंद्रित रखें।";
+                
+                const parcelInfo = parcel 
+                    ? `Selected Parcel: ${parcel.id} to ${parcel.destination} (Status: ${parcel.status})`
+                    : '';
+                
+                return `${systemPrompt}\n${parcelInfo}\nUser: ${text}\nAssistant:`;
+            }
+            
+            async callLLM(prompt) {
+                if (this.config.provider === 'gemini') {
+                    return this.callGemini(prompt);
+                } else if (this.config.provider === 'groq') {
+                    return this.callGroq(prompt);
+                } else {
+                    return this.getFallbackResponse('en');
+                }
+            }
+            
+            async callGemini(prompt) {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${this.config.model}:generateContent?key=${this.config.apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: {
+                                temperature: this.config.temperature,
+                                maxOutputTokens: this.config.maxTokens,
+                            },
+                        }),
+                    }
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`Gemini API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || this.getFallbackResponse('en');
+            }
+            
+            async callGroq(prompt) {
+                const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this.config.apiKey}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: this.config.model,
+                        messages: [{ role: 'user', content: prompt }],
+                        temperature: this.config.temperature,
+                        max_tokens: this.config.maxTokens,
+                    }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Groq API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data.choices?.[0]?.message?.content || this.getFallbackResponse('en');
+            }
+            
+            getFallbackResponse(language) {
+                const responses = {
+                    en: "I can help you with delivery status, navigation, and customer communication. What do you need?",
+                    hi: "मैं आपकी डिलीवरी स्थिति, नेवीगेशन और ग्राहक संचार में मदद कर सकता हूं। आपको क्या चाहिए?"
+                };
+                return responses[language] || responses.en;
+            }
+        }
+        
+        // Initialize LLM service
+        let llmService = null;
+        
+        // Check if API key is configured
+        function checkAPIKey() {
+            const config = window.DEMO_CONFIG?.llm;
+            if (!config || !config.apiKey || config.apiKey.includes('YOUR_')) {
+                return false;
+            }
+            return true;
+        }
+        
+        // Initialize services
+        function initializeServices() {
+            if (checkAPIKey()) {
+                llmService = new SimpleLLMService(window.DEMO_CONFIG.llm);
+                console.log('✅ LLM Service initialized with', window.DEMO_CONFIG.llm.provider);
+            } else {
+                console.log('⚠️ No API key configured, using fallback responses');
+                llmService = {
+                    processMessage: async (text, parcel, language) => {
+                        return generateFallbackResponse(text, parcel, language);
+                    }
+                };
+            }
+        }
+        
+        // Fallback response generator (when no API key)
+        function generateFallbackResponse(message, parcel, language) {
+            const lowerMessage = message.toLowerCase();
+            
+            if (!parcel) {
+                return language === 'hi' 
+                    ? "कृपया पहले एक पार्सल चुनें।"
+                    : "Please select a parcel first to get specific information.";
+            }
+            
+            if (lowerMessage.includes('status') || lowerMessage.includes('delivery')) {
+                return language === 'hi'
+                    ? `आपका पार्सल ${parcel.id} वर्तमान में ${parcel.status} है। गंतव्य: ${parcel.destination}`
+                    : `Your parcel ${parcel.id} is currently ${parcel.status}. Destination: ${parcel.destination}`;
+            }
+            
+            if (lowerMessage.includes('where') || lowerMessage.includes('location')) {
+                return language === 'hi'
+                    ? `आपका पार्सल ${parcel.id} यहाँ डिलीवर किया जा रहा है: ${parcel.destination}`
+                    : `Your parcel ${parcel.id} is being delivered to: ${parcel.destination}`;
+            }
+            
+            return language === 'hi'
+                ? "मैं डिलीवरी स्थिति, नेवीगेशन और ग्राहक संचार में मदद कर सकता हूं।"
+                : "I can help with delivery status, navigation, and customer communication.";
+        }
+        
+        // Initialize speech recognition
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                handleVoiceResult(transcript);
+            };
+            
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                stopListening();
+                updateCallStatus('Voice recognition error. Please try again.');
+            };
+            
+            recognition.onend = function() {
+                stopListening();
+            };
+        }
+        
+        // Language configurations
+        const languageConfig = {
+            en: {
+                name: 'English',
+                speechLang: 'en-US',
+                placeholder: 'Type your message...',
+                selectParcel: 'Select Parcel',
+                tapToSpeak: 'Tap to speak',
+                listening: 'Listening...',
+                processing: 'Processing...',
+                welcome: "Hello! I'm your AI assistant. Please select a parcel to get started.",
+                error: "Sorry, I encountered an error. Please try again."
+            },
+            hi: {
+                name: 'हिन्दी',
+                speechLang: 'hi-IN',
+                placeholder: 'अपना संदेश टाइप करें...',
+                selectParcel: 'पार्सल चुनें',
+                tapToSpeak: 'बोलने के लिए टैप करें',
+                listening: 'सुन रहा है...',
+                processing: 'प्रोसेसिंग...',
+                welcome: 'नमस्ते! मैं आपका AI सहायक हूं। शुरू करने के लिए कृपया एक पार्सल चुनें।',
+                error: 'माफ करें, मुझे एक त्रुटि का सामना करना पड़ा। कृपया पुनः प्रयास करें।'
+            },
+            ta: {
+                name: 'தமிழ்',
+                speechLang: 'ta-IN',
+                placeholder: 'உங்கள் செய்தியை தட்டச்சு செய்யுங்கள்...',
+                selectParcel: 'பார்சல் தேர்ந்தெடுக்கவும்',
+                tapToSpeak: 'பேச தட்டவும்',
+                listening: 'கேட்கிறது...',
+                processing: 'செயலாக்கம்...',
+                welcome: 'வணக்கம்! நான் உங்கள் AI உதவியாளர். தொடங்க ஒரு பார்சலைத் தேர்ந்தெடுக்கவும்.',
+                error: 'மன்னிக்கவும், நான் ஒரு பிழையை எதிர்கொண்டேன். தயவுசெய்து மீண்டும் முயற்சிக்கவும்.'
+            },
+            te: {
+                name: 'తెలుగు',
+                speechLang: 'te-IN',
+                placeholder: 'మీ సందేశాన్ని టైప్ చేయండి...',
+                selectParcel: 'పార్సెల్ ఎంచుకోండి',
+                tapToSpeak: 'మాట్లాడటానికి నొక్కండి',
+                listening: 'వింటోంది...',
+                processing: 'ప్రాసెసింగ్...',
+                welcome: 'నమస్కారం! నేను మీ AI అసిస్టెంట్. ప్రారంభించడానికి దయచేసి ఒక పార్సెల్‌ను ఎంచుకోండి.',
+                error: 'క్షమించండి, నేను ఒక లోపాన్ని ఎదుర్కొన్నాను. దయచేసి మళ్లీ ప్రయత్నించండి.'
+            }
+        };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeServices();
+            updateLanguageUI();
+            
+            // Initialize chat voice recognition
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                
+                // Chat recognition
+                chatRecognition = new SpeechRecognition();
+                chatRecognition.continuous = false;
+                chatRecognition.interimResults = false;
+                chatRecognition.lang = 'en-US';
+                
+                chatRecognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    handleChatVoiceResult(transcript);
+                };
+                
+                chatRecognition.onerror = function(event) {
+                    console.error('Chat voice recognition error:', event.error);
+                    stopChatVoice();
+                };
+                
+                chatRecognition.onend = function() {
+                    stopChatVoice();
+                };
+                
+                console.log('🎙️ Chat voice recognition initialized');
+            } else {
+                // Disable voice button if not supported
+                const voiceBtn = document.getElementById('chatVoiceBtn');
+                if (voiceBtn) {
+                    voiceBtn.disabled = true;
+                    voiceBtn.title = 'Voice recognition not supported in this browser';
+                    voiceBtn.style.opacity = '0.5';
+                }
+            }
+            
+            // Show API key status
+            if (checkAPIKey()) {
+                console.log('🚀 Demo ready with', window.DEMO_CONFIG.llm.provider, 'LLM');
+            } else {
+                console.log('📝 Demo running with fallback responses. Configure API key in demo-config.js for full AI features.');
+            }
+            
+            // Enable send button when typing
+            document.getElementById('messageInput').addEventListener('input', function() {
+                const sendBtn = document.getElementById('sendBtn');
+                sendBtn.disabled = !this.value.trim();
+            });
+            
+            // Parcel selector change handler
+            document.getElementById('parcelSelector').addEventListener('change', function() {
+                const value = this.value;
+                if (value) {
+                    const parcels = {
+                        'PKG001': { id: 'PKG001', destination: '123 Main Street, Mumbai', status: 'pending' },
+                        'PKG002': { id: 'PKG002', destination: '456 Oak Avenue, Mumbai', status: 'in_transit' },
+                        'PKG003': { id: 'PKG003', destination: '789 Pine Road, Mumbai', status: 'delayed' }
+                    };
+                    selectParcel(parcels[value]);
+                }
+            });
+        });
+        
+        // Parcel selection
+        function selectParcel(parcel) {
+            selectedParcel = parcel;
+            
+            const callButton = document.getElementById('callButton');
+            callButton.disabled = false;
+            callButton.title = 'Start voice call';
+            
+            // Add selection message
+            addMessage('agent', `Selected parcel: ${parcel.id} to ${parcel.destination}`);
+            
+            // Update call interface
+            updateSelectedParcelInfo();
+        }
+        
+        // Language switching
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            
+            // Update active button
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active', 'bg-green-500', 'text-white'));
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-600', 'dark:text-gray-300'));
+            
+            event.target.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-600', 'dark:text-gray-300');
+            event.target.classList.add('active', 'bg-green-500', 'text-white');
+            
+            // Update speech recognition language for both call and chat
+            const config = languageConfig[lang];
+            if (recognition) {
+                recognition.lang = config.speechLang;
+            }
+            if (chatRecognition) {
+                chatRecognition.lang = config.speechLang;
+            }
+            
+            updateLanguageUI();
+            
+            // Add language change message
+            addMessage('agent', config.welcome);
+            
+            console.log(`🌍 Language changed to ${config.name} (${config.speechLang})`);
+        }
+        
+        function updateLanguageUI() {
+            const config = languageConfig[currentLanguage];
+            
+            // Update placeholders and text
+            document.getElementById('messageInput').placeholder = config.placeholder;
+        }
+        
+        // Chat functionality
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        function adjustTextareaHeight(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            addMessage('user', message);
+            input.value = '';
+            input.style.height = 'auto';
+            document.getElementById('sendBtn').disabled = true;
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Process with LLM service
+            llmService.processMessage(message, selectedParcel, currentLanguage)
+                .then(response => {
+                    hideTypingIndicator();
+                    addMessage('agent', response);
+                    
+                    // Auto-speak response if enabled
+                    if (autoSpeakEnabled) {
+                        speakChatMessage(response, currentLanguage);
+                    }
+                })
+                .catch(error => {
+                    console.error('Message processing error:', error);
+                    hideTypingIndicator();
+                    const config = languageConfig[currentLanguage];
+                    const errorMsg = config?.error || 'Sorry, I encountered an error. Please try again.';
+                    addMessage('agent', errorMsg);
+                    
+                    if (autoSpeakEnabled) {
+                        speakChatMessage(errorMsg, currentLanguage);
+                    }
+                });
+        }
+        
+        function addMessage(sender, text) {
+            const messagesArea = document.getElementById('messagesArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender} mb-4`;
+            
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            messageDiv.innerHTML = `
+                <div class="message-bubble">${text}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">${timeString}</div>
+            `;
+            
+            messagesArea.appendChild(messageDiv);
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+        
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator').classList.remove('hidden');
+        }
+        
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').classList.add('hidden');
+        }
+        
+        // Call interface
+        function startCall() {
+            if (!selectedParcel) {
+                alert('Please select a parcel first');
+                return;
+            }
+            
+            document.getElementById('callOverlay').classList.remove('hidden');
+            callStartTime = new Date();
+            startCallDurationTimer();
+            updateSelectedParcelInfo();
+            
+            // Add pulsing effect
+            document.getElementById('avatarPulse').classList.add('pulse-ring');
+            
+            // Welcome message
+            setTimeout(() => {
+                const config = languageConfig[currentLanguage];
+                updateCallStatus(config.tapToSpeak);
+            }, 1000);
+        }
+        
+        function endCall() {
+            document.getElementById('callOverlay').classList.add('hidden');
+            
+            if (callDurationInterval) {
+                clearInterval(callDurationInterval);
+                callDurationInterval = null;
+            }
+            
+            callStartTime = null;
+            stopListening();
+            updateCallStatus('');
+            hideTranscript();
+            
+            // Remove pulsing effect
+            document.getElementById('avatarPulse').classList.remove('pulse-ring');
+        }
+        
+        function startCallDurationTimer() {
+            callDurationInterval = setInterval(() => {
+                if (callStartTime) {
+                    const now = new Date();
+                    const duration = Math.floor((now - callStartTime) / 1000);
+                    const minutes = Math.floor(duration / 60);
+                    const seconds = duration % 60;
+                    document.getElementById('callDuration').textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+        
+        function toggleVoiceRecognition() {
+            if (isListening) {
+                stopListening();
+            } else {
+                startListening();
+            }
+        }
+        
+        function startListening() {
+            if (!recognition) {
+                updateCallStatus('Voice recognition not supported');
+                return;
+            }
+            
+            isListening = true;
+            const voiceBtn = document.getElementById('voiceBtn');
+            
+            // Update button appearance
+            voiceBtn.querySelector('div').classList.remove('bg-primary');
+            voiceBtn.querySelector('div').classList.add('bg-red-500');
+            voiceBtn.querySelector('span').textContent = 'mic';
+            
+            const config = languageConfig[currentLanguage];
+            updateCallStatus(config.listening);
+            
+            try {
+                recognition.start();
+            } catch (error) {
+                console.error('Failed to start recognition:', error);
+                stopListening();
+            }
+        }
+        
+        function stopListening() {
+            if (!isListening) return;
+            
+            isListening = false;
+            const voiceBtn = document.getElementById('voiceBtn');
+            
+            // Reset button appearance
+            voiceBtn.querySelector('div').classList.remove('bg-red-500');
+            voiceBtn.querySelector('div').classList.add('bg-primary');
+            voiceBtn.querySelector('span').textContent = 'mic';
+            
+            const config = languageConfig[currentLanguage];
+            updateCallStatus(config.tapToSpeak);
+            
+            if (recognition) {
+                recognition.stop();
+            }
+        }
+        
+        function handleVoiceResult(transcript) {
+            showTranscript(transcript);
+            
+            const config = languageConfig[currentLanguage];
+            updateCallStatus(config.processing);
+            
+            // Process with LLM service
+            llmService.processMessage(transcript, selectedParcel, currentLanguage)
+                .then(response => {
+                    // Speak in the current language
+                    speak(response, currentLanguage);
+                    
+                    // Also add to chat
+                    addMessage('user', transcript);
+                    addMessage('agent', response);
+                    
+                    const config = languageConfig[currentLanguage];
+                    updateCallStatus(config.tapToSpeak);
+                })
+                .catch(error => {
+                    console.error('Voice processing error:', error);
+                    const errorMsg = languageConfig[currentLanguage]?.error || 'Sorry, I encountered an error.';
+                    speak(errorMsg, currentLanguage);
+                    
+                    const config = languageConfig[currentLanguage];
+                    updateCallStatus(config.tapToSpeak);
+                });
+        }
+        
+        function speak(text, forceLanguage = null) {
+            if (!synthesis) return;
+            
+            isSpeaking = true;
+            updateCallStatus('Speaking...');
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = getOptimalSpeechRate(forceLanguage || currentLanguage);
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            // Set language-specific voice
+            const targetLang = forceLanguage || currentLanguage;
+            const speechLang = languageConfig[targetLang]?.speechLang || 'en-US';
+            utterance.lang = speechLang;
+            
+            const voices = synthesis.getVoices();
+            const targetVoice = voices.find(voice => 
+                voice.lang.startsWith(speechLang) || 
+                voice.lang.startsWith(speechLang.split('-')[0])
+            );
+            
+            if (targetVoice) {
+                utterance.voice = targetVoice;
+                console.log(`🗣️ Speaking in ${targetVoice.name} (${targetVoice.lang})`);
+            } else {
+                console.log(`⚠️ No voice found for ${speechLang}, using default`);
+            }
+            
+            utterance.onend = () => {
+                isSpeaking = false;
+                const config = languageConfig[currentLanguage];
+                updateCallStatus(config.tapToSpeak);
+            };
+            
+            utterance.onerror = (error) => {
+                console.error('Speech synthesis error:', error);
+                isSpeaking = false;
+                const config = languageConfig[currentLanguage];
+                updateCallStatus(config.tapToSpeak);
+            };
+            
+            synthesis.speak(utterance);
+        }
+        
+        // Get optimal speech rate for different languages
+        function getOptimalSpeechRate(language) {
+            const rates = {
+                'en': 0.9,
+                'hi': 0.7,
+                'ta': 0.7,
+                'te': 0.7,
+            };
+            return rates[language] || 0.9;
+        }
+        
+        function updateCallStatus(status) {
+            document.getElementById('callStatus').textContent = status;
+        }
+        
+        function showTranscript(text) {
+            document.getElementById('transcriptText').textContent = text;
+            document.getElementById('callTranscript').classList.remove('hidden');
+        }
+        
+        function hideTranscript() {
+            document.getElementById('callTranscript').classList.add('hidden');
+        }
+        
+        function updateSelectedParcelInfo() {
+            if (selectedParcel) {
+                document.getElementById('selectedParcelText').textContent = 
+                    `${selectedParcel.id} - ${selectedParcel.destination}`;
+                document.getElementById('selectedParcelInfo').classList.remove('hidden');
+            }
+        }
+        
+        // Chat Voice Functions
+        function toggleChatVoice() {
+            if (!chatRecognition) {
+                alert('Voice recognition not supported in this browser. Please use Chrome or Edge.');
+                return;
+            }
+            
+            if (isChatListening) {
+                stopChatVoice();
+            } else {
+                startChatVoice();
+            }
+        }
+        
+        function startChatVoice() {
+            if (isChatListening) return;
+            
+            isChatListening = true;
+            const voiceBtn = document.getElementById('chatVoiceBtn');
+            voiceBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+            voiceBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+            voiceBtn.title = 'Listening... Click to stop';
+            
+            // Set language for recognition
+            const config = languageConfig[currentLanguage];
+            chatRecognition.lang = config.speechLang;
+            
+            try {
+                chatRecognition.start();
+                console.log('🎙️ Started chat voice recognition in', config.speechLang);
+            } catch (error) {
+                console.error('Failed to start chat voice recognition:', error);
+                stopChatVoice();
+            }
+        }
+        
+        function stopChatVoice() {
+            if (!isChatListening) return;
+            
+            isChatListening = false;
+            const voiceBtn = document.getElementById('chatVoiceBtn');
+            voiceBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+            voiceBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+            voiceBtn.title = 'Voice input';
+            
+            if (chatRecognition) {
+                chatRecognition.stop();
+            }
+        }
+        
+        function handleChatVoiceResult(transcript) {
+            console.log('🗣️ Chat voice input:', transcript);
+            
+            // Add the transcript to the input field
+            const input = document.getElementById('messageInput');
+            input.value = transcript;
+            adjustTextareaHeight(input);
+            
+            // Enable send button
+            document.getElementById('sendBtn').disabled = false;
+        }
+        
+        function toggleAutoSpeak() {
+            autoSpeakEnabled = !autoSpeakEnabled;
+            const speakBtn = document.getElementById('speakBtn');
+            
+            if (autoSpeakEnabled) {
+                speakBtn.classList.remove('bg-gray-500', 'hover:bg-gray-600');
+                speakBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+                speakBtn.title = 'Auto-speak ON - Click to disable';
+                console.log('🔊 Auto-speak enabled');
+            } else {
+                speakBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                speakBtn.classList.add('bg-gray-500', 'hover:bg-gray-600');
+                speakBtn.title = 'Auto-speak OFF - Click to enable';
+                console.log('🔇 Auto-speak disabled');
+            }
+        }
+        
+        function speakChatMessage(text, language) {
+            if (!autoSpeakEnabled || !synthesis) return;
+            
+            // Stop any ongoing speech
+            synthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = getOptimalSpeechRate(language);
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            // Set language-specific voice
+            const config = languageConfig[language];
+            if (config && config.speechLang) {
+                utterance.lang = config.speechLang;
+                
+                const voices = synthesis.getVoices();
+                const targetVoice = voices.find(voice => 
+                    voice.lang.startsWith(config.speechLang) || 
+                    voice.lang.startsWith(config.speechLang.split('-')[0])
+                );
+                
+                if (targetVoice) {
+                    utterance.voice = targetVoice;
+                    console.log(`🗣️ Speaking chat message in ${targetVoice.name} (${targetVoice.lang})`);
+                }
+            }
+            
+            synthesis.speak(utterance);
+        }
+        
+        // Load voices when available
+        if (synthesis) {
+            synthesis.onvoiceschanged = function() {
+                // Voices loaded
+            };
+        }
+    </script>
+</body>
+</html>

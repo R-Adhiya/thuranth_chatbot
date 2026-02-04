@@ -1,0 +1,187 @@
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout
+*.c text
+*.h text
+*.cpp text
+*.hpp text
+*.java text
+*.js text
+*.jsx text
+*.ts text
+*.tsx text
+*.json text
+*.css text
+*.scss text
+*.sass text
+*.less text
+*.html text
+*.htm text
+*.xml text
+*.svg text
+*.md text
+*.txt text
+*.yml text
+*.yaml text
+*.toml text
+*.ini text
+*.cfg text
+*.conf text
+*.properties text
+*.sql text
+*.py text
+*.rb text
+*.php text
+*.go text
+*.rs text
+*.kt text
+*.swift text
+*.dart text
+*.vue text
+*.svelte text
+
+# Configuration files
+*.gitignore text
+*.gitattributes text
+*.editorconfig text
+.eslintrc* text
+.prettierrc* text
+.babelrc* text
+tsconfig*.json text
+package*.json text
+*.lock text
+Dockerfile text
+docker-compose*.yml text
+
+# Shell scripts (Unix line endings)
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+*.fish text eol=lf
+
+# Windows batch files (Windows line endings)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Declare files that will always have CRLF line endings on checkout
+*.sln text eol=crlf
+*.csproj text eol=crlf
+*.vbproj text eol=crlf
+*.vcxproj text eol=crlf
+*.vcproj text eol=crlf
+
+# Declare files that will always have LF line endings on checkout
+Makefile text eol=lf
+*.mk text eol=lf
+
+# Denote all files that are truly binary and should not be modified
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mov binary
+*.mp4 binary
+*.mp3 binary
+*.flv binary
+*.fla binary
+*.swf binary
+*.gz binary
+*.zip binary
+*.7z binary
+*.ttf binary
+*.eot binary
+*.woff binary
+*.woff2 binary
+*.pyc binary
+*.pdf binary
+*.ez binary
+*.bz2 binary
+*.swp binary
+*.jar binary
+*.class binary
+*.tar binary
+*.rar binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.a binary
+*.lib binary
+*.o binary
+*.obj binary
+*.pdb binary
+*.idb binary
+*.pch binary
+*.tmp binary
+*.log binary
+*.sqlite binary
+*.sqlite3 binary
+*.db binary
+
+# React Native specific
+*.pbxproj text
+*.xcworkspacedata text
+*.xcsettings text
+*.xcscheme text
+
+# Blockchain specific
+*.block binary
+*.tx binary
+
+# Node.js
+node_modules/** binary
+
+# Archives
+*.tar.gz binary
+*.tgz binary
+
+# Fonts
+*.otf binary
+*.ttc binary
+
+# Images
+*.webp binary
+*.bmp binary
+*.tiff binary
+*.tif binary
+*.svg text
+
+# Audio
+*.wav binary
+*.aac binary
+*.ogg binary
+*.flac binary
+
+# Video
+*.avi binary
+*.wmv binary
+*.mkv binary
+*.webm binary
+
+# Documents
+*.doc binary
+*.docx binary
+*.xls binary
+*.xlsx binary
+*.ppt binary
+*.pptx binary
+
+# Certificates and keys
+*.pem binary
+*.key binary
+*.crt binary
+*.cer binary
+*.p12 binary
+*.pfx binary
+*.jks binary
+*.keystore binary
+
+# Mobile specific
+*.ipa binary
+*.apk binary
+*.aab binary
+*.dSYM binary

@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Agent - New UI Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1111d4",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101022",
+                        "danger": "#FF4500",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+            background: #fff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: #fff;
+            border-bottom: 1px solid #e9ecef;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .parcel-selector {
+            background: #007bff;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .language-selector {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .lang-btn {
+            padding: 4px 8px;
+            border-radius: 12px;
+            border: none;
+            background: #e9ecef;
+            color: #666;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .lang-btn.active {
+            background: #28a745;
+            color: white;
+        }
+        
+        /* Parcel Dropdown */
+        .parcel-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 99;
+            display: none;
+        }
+        
+        .parcel-dropdown.show {
+            display: block;
+        }
+        
+        .parcel-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f8f9fa;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .parcel-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .parcel-id {
+            font-weight: 600;
+            color: #007bff;
+            font-size: 14px;
+        }
+        
+        .parcel-destination {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        .parcel-status {
+            font-size: 10px;
+            color: #28a745;
+            text-transform: capitalize;
+            margin-top: 2px;
+        }
+        
+        /* Chat Interface */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 140px);
+        }
+        
+        .messages-area {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        
+        .message {
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .message.user {
+            align-items: flex-end;
+        }
+        
+        .message.agent {
+            align-items: flex-start;
+        }
+        
+        .message-bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            word-wrap: break-word;
+        }
+        
+        .message.user .message-bubble {
+            background: #007bff;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message.agent .message-bubble {
+            background: #e9ecef;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message-time {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-top: 4px;
+            padding: 0 4px;
+        }
+        
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            padding: 12px 16px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .typing-dots {
+            display: inline-flex;
+            margin-left: 8px;
+        }
+        
+        .typing-dots span {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #666;
+            margin: 0 1px;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+        
+        /* Input Area */
+        .input-area {
+            padding: 16px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        
+        .message-input {
+            flex: 1;
+            border: 1px solid #e9ecef;
+            border-radius: 20px;
+            padding: 12px 16px;
+            resize: none;
+            max-height: 100px;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .send-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .voice-input-btn, .speak-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .voice-input-btn {
+            background: #28a745;
+            color: white;
+        }
+        
+        .voice-input-btn.listening {
+            background: #dc3545;
+            animation: pulse 1.6s infinite;
+        }
+        
+        .voice-input-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .speak-btn {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .speak-btn.active {
+            background: #007bff;
+        }
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .voice-input-btn {
+            background: #28a745;
+            color: white;
+        }
+        
+        .voice-input-btn.listening {
+            background: #dc3545;
+            animation: pulse 1.6s infinite;
+        }
+        
+        .speak-btn {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .speak-btn.active {
+            background: #007bff;
+        }
+        
+        /* Call Button */
+        .call-button {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #28a745;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .call-button:hover {
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+        }
+        
+        .call-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .call-button:disabled:hover {
+            transform: translateY(-50%);
+        }
+        
+        .call-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+        
+        .call-text {
+            font-size: 8px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        /* Call Interface Overlay */
+        .call-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1a1a1a;
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            color: white;
+        }
+        
+        .call-overlay.show {
+            display: flex;
+        }
+        
+        .call-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            padding-top: 50px;
+        }
+        
+        .call-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .call-duration {
+            font-size: 14px;
+            color: #ccc;
+        }
+        
+        .connection-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #28a745;
+        }
+        
+        .call-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #007bff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease;
+        }
+        
+        .avatar.listening {
+            animation: pulse 1.6s infinite;
+            background: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .call-status {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #ccc;
+        }
+        
+        .transcript {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 300px;
+            min-height: 60px;
+            display: none;
+        }
+        
+        .transcript.show {
+            display: block;
+        }
+        
+        .transcript-label {
+            font-size: 12px;
+            color: #ccc;
+            margin-bottom: 8px;
+        }
+        
+        .transcript-text {
+            font-size: 16px;
+            line-height: 1.4;
+        }
+        
+        .selected-parcel-info {
+            background: rgba(0,123,255,0.2);
+            border-radius: 8px;
+            padding: 12px;
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 20px;
+        }
+        
+        .parcel-info-label {
+            font-size: 12px;
+            color: #87ceeb;
+            margin-bottom: 4px;
+        }
+        
+        .parcel-info-text {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .call-controls {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 40px;
+        }
+        
+        .voice-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #007bff;
+            border: none;
+            cursor: pointer;
+            font-size: 30px;
+            transition: all 0.3s ease;
+        }
+        
+        .voice-btn.listening {
+            background: #dc3545;
+            animation: pulse 1.6s infinite;
+        }
+        
+        .voice-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .end-call-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #dc3545;
+        }
+        
+        .end-call-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            transform: rotate(135deg);
+        }
+        
+        .end-call-text {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        /* Demo Banner */
+        .demo-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .container {
+                max-width: 100%;
+                margin: 0;
+            }
+            
+            .call-button {
+                right: 16px;
+                width: 56px;
+                height: 56px;
+            }
+            
+            .call-icon {
+                font-size: 18px;
+            }
+        }
+        
+        /* Voice Input Visual Feedback */
+        .voice-input-btn, .speak-btn {
+            position: relative;
+        }
+        
+        .voice-input-btn.listening::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border: 2px solid #dc3545;
+            border-radius: 50%;
+            animation: pulse-border 1.6s infinite;
+        }
+        
+        @keyframes pulse-border {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Demo Banner -->
+        <div class="demo-banner">
+            🚀 New Voice Agent UI - Chat + Call Interface Demo
+            <div style="font-size: 12px; margin-top: 4px; opacity: 0.9;">
+                💬 Chat: Use 🎙️ for voice input, 🔊 for auto-speak | 📞 Call: Full voice conversation
+            </div>
+        </div>
+        
+        <!-- Header -->
+        <div class="header">
+            <button class="parcel-selector" id="parcelSelector" onclick="toggleParcelDropdown()">
+                Select Parcel
+            </button>
+            
+            <div class="language-selector">
+                <button class="lang-btn active" onclick="setLanguage('en')">EN</button>
+                <button class="lang-btn" onclick="setLanguage('hi')">हि</button>
+                <button class="lang-btn" onclick="setLanguage('ta')">த</button>
+                <button class="lang-btn" onclick="setLanguage('te')">తె</button>
+            </div>
+            
+            <!-- Parcel Dropdown -->
+            <div class="parcel-dropdown" id="parcelDropdown">
+                <div class="parcel-item" onclick="selectParcel('PKG001', '123 Main Street, Mumbai', 'pending')">
+                    <div class="parcel-id">PKG001</div>
+                    <div class="parcel-destination">123 Main Street, Mumbai</div>
+                    <div class="parcel-status">pending</div>
+                </div>
+                <div class="parcel-item" onclick="selectParcel('PKG002', '456 Oak Avenue, Mumbai', 'in_transit')">
+                    <div class="parcel-id">PKG002</div>
+                    <div class="parcel-destination">456 Oak Avenue, Mumbai</div>
+                    <div class="parcel-status">in_transit</div>
+                </div>
+                <div class="parcel-item" onclick="selectParcel('PKG003', '789 Pine Road, Mumbai', 'delayed')">
+                    <div class="parcel-id">PKG003</div>
+                    <div class="parcel-destination">789 Pine Road, Mumbai</div>
+                    <div class="parcel-status">delayed</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat Interface -->
+        <div class="chat-container">
+            <div class="messages-area" id="messagesArea">
+                <div class="message agent">
+                    <div class="message-bubble">
+                        Hello! I'm your AI assistant. Please select a parcel to get started, or ask me anything about your deliveries.
+                    </div>
+                    <div class="message-time">12:00 PM</div>
+                </div>
+            </div>
+            
+            <div class="typing-indicator" id="typingIndicator">
+                Assistant is typing
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <button class="voice-input-btn" id="chatVoiceBtn" onclick="toggleChatVoice()" title="Voice input">
+                    🎙️
+                </button>
+                <textarea 
+                    class="message-input" 
+                    id="messageInput" 
+                    placeholder="Type your message..."
+                    rows="1"
+                    onkeypress="handleKeyPress(event)"
+                    oninput="adjustTextareaHeight(this)"
+                ></textarea>
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+                    ➤
+                </button>
+                <button class="speak-btn" id="speakBtn" onclick="toggleAutoSpeak()" title="Auto-speak responses">
+                    🔊
+                </button>
+            </div>
+        </div>
+        
+        <!-- Call Button -->
+        <button class="call-button" id="callButton" onclick="startCall()" disabled title="Select a parcel first">
+            <div class="call-icon">📞</div>
+            <div class="call-text">CALL</div>
+        </button>
+    </div>
+    
+    <!-- Call Interface Overlay -->
+    <div class="call-overlay" id="callOverlay">
+        <div class="call-header">
+            <div>
+                <div class="call-title">Voice Assistant</div>
+                <div class="call-duration" id="callDuration">00:00</div>
+            </div>
+            <div class="connection-status"></div>
+        </div>
+        
+        <div class="call-main">
+            <div class="avatar" id="avatar">🤖</div>
+            
+            <div class="call-status" id="callStatus">Tap to speak</div>
+            
+            <div class="transcript" id="callTranscript">
+                <div class="transcript-label">You said:</div>
+                <div class="transcript-text" id="transcriptText"></div>
+            </div>
+            
+            <div class="selected-parcel-info" id="selectedParcelInfo" style="display: none;">
+                <div class="parcel-info-label">Selected Parcel:</div>
+                <div class="parcel-info-text" id="selectedParcelText"></div>
+            </div>
+        </div>
+        
+        <div class="call-controls">
+            <button class="voice-btn" id="voiceBtn" onclick="toggleVoiceRecognition()">
+                🎙️
+            </button>
+            
+            <button class="end-call-btn" onclick="endCall()">
+                <div class="end-call-icon">📞</div>
+                <div class="end-call-text">End Call</div>
+            </button>
+        </div>
+    </div>
+    
+    <script src="demo-config.js"></script>
+    <script>
+        // Global state
+        let selectedParcel = null;
+        let currentLanguage = 'en';
+        let isListening = false;
+        let isSpeaking = false;
+        let callStartTime = null;
+        let callDurationInterval = null;
+        let recognition = null;
+        let synthesis = window.speechSynthesis;
+        
+        // Chat voice features
+        let isChatListening = false;
+        let autoSpeakEnabled = false;
+        let chatRecognition = null;
+        
+        // LLM Service (Cloud-based)
+        class SimpleLLMService {
+            constructor(config) {
+                this.config = config;
+            }
+            
+            async processMessage(text, parcel, language) {
+                try {
+                    const prompt = this.buildPrompt(text, parcel, language);
+                    return await this.callLLM(prompt);
+                } catch (error) {
+                    console.error('LLM Error:', error);
+                    return this.getFallbackResponse(language);
+                }
+            }
+            
+            buildPrompt(text, parcel, language) {
+                const systemPrompt = language === 'en' 
+                    ? "You are a helpful AI assistant for delivery drivers. Keep responses concise and delivery-focused."
+                    : "आप डिलीवरी ड्राइवरों के लिए एक सहायक AI असिस्टेंट हैं। जवाब संक्षिप्त और डिलीवरी पर केंद्रित रखें।";
+                
+                const parcelInfo = parcel 
+                    ? `Selected Parcel: ${parcel.id} to ${parcel.destination} (Status: ${parcel.status})`
+                    : '';
+                
+                return `${systemPrompt}\n${parcelInfo}\nUser: ${text}\nAssistant:`;
+            }
+            
+            async callLLM(prompt) {
+                if (this.config.provider === 'gemini') {
+                    return this.callGemini(prompt);
+                } else if (this.config.provider === 'groq') {
+                    return this.callGroq(prompt);
+                } else {
+                    return this.getFallbackResponse('en');
+                }
+            }
+            
+            async callGemini(prompt) {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${this.config.model}:generateContent?key=${this.config.apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: {
+                                temperature: this.config.temperature,
+                                maxOutputTokens: this.config.maxTokens,
+                            },
+                        }),
+                    }
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`Gemini API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || this.getFallbackResponse('en');
+            }
+            
+            async callGroq(prompt) {
+                const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this.config.apiKey}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: this.config.model,
+                        messages: [{ role: 'user', content: prompt }],
+                        temperature: this.config.temperature,
+                        max_tokens: this.config.maxTokens,
+                    }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Groq API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data.choices?.[0]?.message?.content || this.getFallbackResponse('en');
+            }
+            
+            getFallbackResponse(language) {
+                const responses = {
+                    en: "I can help you with delivery status, navigation, and customer communication. What do you need?",
+                    hi: "मैं आपकी डिलीवरी स्थिति, नेवीगेशन और ग्राहक संचार में मदद कर सकता हूं। आपको क्या चाहिए?"
+                };
+                return responses[language] || responses.en;
+            }
+        }
+        
+        // Initialize LLM service
+        let llmService = null;
+        
+        // Check if API key is configured
+        function checkAPIKey() {
+            const config = window.DEMO_CONFIG?.llm;
+            if (!config || !config.apiKey || config.apiKey.includes('YOUR_')) {
+                return false;
+            }
+            return true;
+        }
+        
+        // Initialize services
+        function initializeServices() {
+            if (checkAPIKey()) {
+                llmService = new SimpleLLMService(window.DEMO_CONFIG.llm);
+                console.log('✅ LLM Service initialized with', window.DEMO_CONFIG.llm.provider);
+            } else {
+                console.log('⚠️ No API key configured, using fallback responses');
+                llmService = {
+                    processMessage: async (text, parcel, language) => {
+                        return generateFallbackResponse(text, parcel, language);
+                    }
+                };
+            }
+        }
+        
+        // Fallback response generator (when no API key)
+        function generateFallbackResponse(message, parcel, language) {
+            const lowerMessage = message.toLowerCase();
+            
+            if (!parcel) {
+                return language === 'hi' 
+                    ? "कृपया पहले एक पार्सल चुनें।"
+                    : "Please select a parcel first to get specific information.";
+            }
+            
+            if (lowerMessage.includes('status') || lowerMessage.includes('delivery')) {
+                return language === 'hi'
+                    ? `आपका पार्सल ${parcel.id} वर्तमान में ${parcel.status} है। गंतव्य: ${parcel.destination}`
+                    : `Your parcel ${parcel.id} is currently ${parcel.status}. Destination: ${parcel.destination}`;
+            }
+            
+            if (lowerMessage.includes('where') || lowerMessage.includes('location')) {
+                return language === 'hi'
+                    ? `आपका पार्सल ${parcel.id} यहाँ डिलीवर किया जा रहा है: ${parcel.destination}`
+                    : `Your parcel ${parcel.id} is being delivered to: ${parcel.destination}`;
+            }
+            
+            return language === 'hi'
+                ? "मैं डिलीवरी स्थिति, नेवीगेशन और ग्राहक संचार में मदद कर सकता हूं।"
+                : "I can help with delivery status, navigation, and customer communication.";
+        }
+        
+        // Initialize speech recognition
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                handleVoiceResult(transcript);
+            };
+            
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                stopListening();
+                updateCallStatus('Voice recognition error. Please try again.');
+            };
+            
+            recognition.onend = function() {
+                stopListening();
+            };
+        }
+        
+        // Language configurations
+        const languageConfig = {
+            en: {
+                name: 'English',
+                speechLang: 'en-US',
+                placeholder: 'Type your message...',
+                selectParcel: 'Select Parcel',
+                tapToSpeak: 'Tap to speak',
+                listening: 'Listening...',
+                processing: 'Processing...',
+                welcome: "Hello! I'm your AI assistant. Please select a parcel to get started.",
+                error: "Sorry, I encountered an error. Please try again."
+            },
+            hi: {
+                name: 'हिन्दी',
+                speechLang: 'hi-IN',
+                placeholder: 'अपना संदेश टाइप करें...',
+                selectParcel: 'पार्सल चुनें',
+                tapToSpeak: 'बोलने के लिए टैप करें',
+                listening: 'सुन रहा है...',
+                processing: 'प्रोसेसिंग...',
+                welcome: 'नमस्ते! मैं आपका AI सहायक हूं। शुरू करने के लिए कृपया एक पार्सल चुनें।',
+                error: 'माफ करें, मुझे एक त्रुटि का सामना करना पड़ा। कृपया पुनः प्रयास करें।'
+            },
+            ta: {
+                name: 'தமிழ்',
+                speechLang: 'ta-IN',
+                placeholder: 'உங்கள் செய்தியை தட்டச்சு செய்யுங்கள்...',
+                selectParcel: 'பார்சல் தேர்ந்தெடுக்கவும்',
+                tapToSpeak: 'பேச தட்டவும்',
+                listening: 'கேட்கிறது...',
+                processing: 'செயலாக்கம்...',
+                welcome: 'வணக்கம்! நான் உங்கள் AI உதவியாளர். தொடங்க ஒரு பார்சலைத் தேர்ந்தெடுக்கவும்.',
+                error: 'மன்னிக்கவும், நான் ஒரு பிழையை எதிர்கொண்டேன். தயவுசெய்து மீண்டும் முயற்சிக்கவும்.'
+            },
+            te: {
+                name: 'తెలుగు',
+                speechLang: 'te-IN',
+                placeholder: 'మీ సందేశాన్ని టైప్ చేయండి...',
+                selectParcel: 'పార్సెల్ ఎంచుకోండి',
+                tapToSpeak: 'మాట్లాడటానికి నొక్కండి',
+                listening: 'వింటోంది...',
+                processing: 'ప్రాసెసింగ్...',
+                welcome: 'నమస్కారం! నేను మీ AI అసిస్టెంట్. ప్రారంభించడానికి దయచేసి ఒక పార్సెల్‌ను ఎంచుకోండి.',
+                error: 'క్షమించండి, నేను ఒక లోపాన్ని ఎదుర్కొన్నాను. దయచేసి మళ్లీ ప్రయత్నించండి.'
+            }
+        };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeServices();
+            updateLanguageUI();
+            updateInputPlaceholder();
+            
+            // Initialize chat voice recognition
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                
+                // Chat recognition
+                chatRecognition = new SpeechRecognition();
+                chatRecognition.continuous = false;
+                chatRecognition.interimResults = false;
+                chatRecognition.lang = 'en-US';
+                
+                chatRecognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    handleChatVoiceResult(transcript);
+                };
+                
+                chatRecognition.onerror = function(event) {
+                    console.error('Chat voice recognition error:', event.error);
+                    stopChatVoice();
+                };
+                
+                chatRecognition.onend = function() {
+                    stopChatVoice();
+                };
+                
+                console.log('🎙️ Chat voice recognition initialized');
+            } else {
+                // Disable voice button if not supported
+                const voiceBtn = document.getElementById('chatVoiceBtn');
+                if (voiceBtn) {
+                    voiceBtn.disabled = true;
+                    voiceBtn.title = 'Voice recognition not supported in this browser';
+                    voiceBtn.style.opacity = '0.5';
+                }
+            }
+            
+            // Show API key status
+            if (checkAPIKey()) {
+                console.log('🚀 Demo ready with', window.DEMO_CONFIG.llm.provider, 'LLM');
+            } else {
+                console.log('📝 Demo running with fallback responses. Configure API key in demo-config.js for full AI features.');
+                
+                // Show notification
+                const banner = document.querySelector('.demo-banner');
+                banner.innerHTML = '📝 Demo Mode - Configure API key in demo-config.js for full AI features';
+                banner.style.background = 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)';
+            }
+            
+            // Enable send button when typing
+            document.getElementById('messageInput').addEventListener('input', function() {
+                const sendBtn = document.getElementById('sendBtn');
+                sendBtn.disabled = !this.value.trim();
+            });
+        });
+        
+        // Parcel selection
+        function toggleParcelDropdown() {
+            const dropdown = document.getElementById('parcelDropdown');
+            dropdown.classList.toggle('show');
+        }
+        
+        function selectParcel(id, destination, status) {
+            selectedParcel = { id, destination, status };
+            
+            const selector = document.getElementById('parcelSelector');
+            selector.textContent = id;
+            
+            const callButton = document.getElementById('callButton');
+            callButton.disabled = false;
+            callButton.title = 'Start voice call';
+            
+            // Hide dropdown
+            document.getElementById('parcelDropdown').classList.remove('show');
+            
+            // Add selection message
+            addMessage('agent', `Selected parcel: ${id} to ${destination}`);
+            
+            // Update call interface
+            updateSelectedParcelInfo();
+        }
+        
+        // Language switching
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            
+            // Update active button
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update speech recognition language for both call and chat
+            const config = languageConfig[lang];
+            if (recognition) {
+                recognition.lang = config.speechLang;
+            }
+            if (chatRecognition) {
+                chatRecognition.lang = config.speechLang;
+            }
+            
+            updateLanguageUI();
+            
+            // Add language change message
+            addMessage('agent', config.welcome);
+            
+            console.log(`🌍 Language changed to ${config.name} (${config.speechLang})`);
+        }
+        
+        function updateLanguageUI() {
+            const config = languageConfig[currentLanguage];
+            
+            // Update placeholders and text
+            document.getElementById('messageInput').placeholder = config.placeholder;
+            
+            if (!selectedParcel) {
+                document.getElementById('parcelSelector').textContent = config.selectParcel;
+            }
+        }
+        
+        // Chat functionality
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        function adjustTextareaHeight(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            addMessage('user', message);
+            input.value = '';
+            input.style.height = 'auto';
+            document.getElementById('sendBtn').disabled = true;
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Process with LLM service
+            llmService.processMessage(message, selectedParcel, currentLanguage)
+                .then(response => {
+                    hideTypingIndicator();
+                    addMessage('agent', response);
+                    
+                    // Auto-speak response if enabled
+                    if (autoSpeakEnabled) {
+                        speakChatMessage(response, currentLanguage);
+                    }
+                })
+                .catch(error => {
+                    console.error('Message processing error:', error);
+                    hideTypingIndicator();
+                    const config = languageConfig[currentLanguage];
+                    const errorMsg = config?.error || 'Sorry, I encountered an error. Please try again.';
+                    addMessage('agent', errorMsg);
+                    
+                    if (autoSpeakEnabled) {
+                        speakChatMessage(errorMsg, currentLanguage);
+                    }
+                });
+        }
+        
+        function addMessage(sender, text) {
+            const messagesArea = document.getElementById('messagesArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            messageDiv.innerHTML = `
+                <div class="message-bubble">${text}</div>
+                <div class="message-time">${timeString}</div>
+            `;
+            
+            messagesArea.appendChild(messageDiv);
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+        
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'flex';
+        }
+        
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'none';
+        }
+        
+        function generateResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            const config = languageConfig[currentLanguage];
+            
+            if (!selectedParcel) {
+                return "Please select a parcel first to get specific information about your delivery.";
+            }
+            
+            if (lowerMessage.includes('status') || lowerMessage.includes('delivery')) {
+                return `Your parcel ${selectedParcel.id} is currently ${selectedParcel.status}. Destination: ${selectedParcel.destination}`;
+            }
+            
+            if (lowerMessage.includes('where') || lowerMessage.includes('location')) {
+                return `Your parcel ${selectedParcel.id} is being delivered to ${selectedParcel.destination}`;
+            }
+            
+            if (lowerMessage.includes('when') || lowerMessage.includes('time')) {
+                return `Estimated delivery time for ${selectedParcel.id} is within 2-3 hours.`;
+            }
+            
+            if (lowerMessage.includes('help')) {
+                return "I can help you with delivery status, location updates, estimated times, and customer communication. What would you like to know?";
+            }
+            
+            if (lowerMessage.includes('customer') || lowerMessage.includes('contact')) {
+                return `Customer contact information for ${selectedParcel.id} is available. Would you like me to initiate contact?`;
+            }
+            
+            return "I can help you with delivery status, navigation, and customer communication. Try asking about your parcel status or delivery time.";
+        }
+        
+        // Call interface
+        function startCall() {
+            if (!selectedParcel) {
+                alert('Please select a parcel first');
+                return;
+            }
+            
+            document.getElementById('callOverlay').classList.add('show');
+            callStartTime = new Date();
+            startCallDurationTimer();
+            updateSelectedParcelInfo();
+            
+            // Welcome message
+            setTimeout(() => {
+                const config = languageConfig[currentLanguage];
+                updateCallStatus(config.tapToSpeak);
+            }, 1000);
+        }
+        
+        function endCall() {
+            document.getElementById('callOverlay').classList.remove('show');
+            
+            if (callDurationInterval) {
+                clearInterval(callDurationInterval);
+                callDurationInterval = null;
+            }
+            
+            callStartTime = null;
+            stopListening();
+            updateCallStatus('');
+            hideTranscript();
+        }
+        
+        function startCallDurationTimer() {
+            callDurationInterval = setInterval(() => {
+                if (callStartTime) {
+                    const now = new Date();
+                    const duration = Math.floor((now - callStartTime) / 1000);
+                    const minutes = Math.floor(duration / 60);
+                    const seconds = duration % 60;
+                    document.getElementById('callDuration').textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+        
+        function toggleVoiceRecognition() {
+            if (isListening) {
+                stopListening();
+            } else {
+                startListening();
+            }
+        }
+        
+        function startListening() {
+            if (!recognition) {
+                updateCallStatus('Voice recognition not supported');
+                return;
+            }
+            
+            isListening = true;
+            const avatar = document.getElementById('avatar');
+            const voiceBtn = document.getElementById('voiceBtn');
+            
+            avatar.classList.add('listening');
+            voiceBtn.classList.add('listening');
+            voiceBtn.textContent = '🎤';
+            
+            const config = languageConfig[currentLanguage];
+            updateCallStatus(config.listening);
+            
+            try {
+                recognition.start();
+            } catch (error) {
+                console.error('Failed to start recognition:', error);
+                stopListening();
+            }
+        }
+        
+        function stopListening() {
+            if (!isListening) return;
+            
+            isListening = false;
+            const avatar = document.getElementById('avatar');
+            const voiceBtn = document.getElementById('voiceBtn');
+            
+            avatar.classList.remove('listening');
+            voiceBtn.classList.remove('listening');
+            voiceBtn.textContent = '🎙️';
+            
+            const config = languageConfig[currentLanguage];
+            updateCallStatus(config.tapToSpeak);
+            
+            if (recognition) {
+                recognition.stop();
+            }
+        }
+        
+        function handleVoiceResult(transcript) {
+            showTranscript(transcript);
+            
+            const config = languageConfig[currentLanguage];
+            updateCallStatus(config.processing);
+            
+            // Process with LLM service
+            llmService.processMessage(transcript, selectedParcel, currentLanguage)
+                .then(response => {
+                    // Speak in the current language
+                    speak(response, currentLanguage);
+                    
+                    // Also add to chat
+                    addMessage('user', transcript);
+                    addMessage('agent', response);
+                    
+                    const config = languageConfig[currentLanguage];
+                    updateCallStatus(config.tapToSpeak);
+                })
+                .catch(error => {
+                    console.error('Voice processing error:', error);
+                    const errorMsg = languageConfig[currentLanguage]?.error || 'Sorry, I encountered an error.';
+                    speak(errorMsg, currentLanguage);
+                    
+                    const config = languageConfig[currentLanguage];
+                    updateCallStatus(config.tapToSpeak);
+                });
+        }
+        
+        function speak(text, forceLanguage = null) {
+            if (!synthesis) return;
+            
+            isSpeaking = true;
+            updateCallStatus('Speaking...');
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = getOptimalSpeechRate(forceLanguage || currentLanguage);
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            // Set language-specific voice
+            const targetLang = forceLanguage || currentLanguage;
+            const speechLang = languageConfig[targetLang]?.speechLang || 'en-US';
+            utterance.lang = speechLang;
+            
+            const voices = synthesis.getVoices();
+            const targetVoice = voices.find(voice => 
+                voice.lang.startsWith(speechLang) || 
+                voice.lang.startsWith(speechLang.split('-')[0])
+            );
+            
+            if (targetVoice) {
+                utterance.voice = targetVoice;
+                console.log(`🗣️ Speaking in ${targetVoice.name} (${targetVoice.lang})`);
+            } else {
+                console.log(`⚠️ No voice found for ${speechLang}, using default`);
+            }
+            
+            utterance.onend = () => {
+                isSpeaking = false;
+                const config = languageConfig[currentLanguage];
+                updateCallStatus(config.tapToSpeak);
+            };
+            
+            utterance.onerror = (error) => {
+                console.error('Speech synthesis error:', error);
+                isSpeaking = false;
+                const config = languageConfig[currentLanguage];
+                updateCallStatus(config.tapToSpeak);
+            };
+            
+            synthesis.speak(utterance);
+        }
+        
+        // Get optimal speech rate for different languages
+        function getOptimalSpeechRate(language) {
+            const rates = {
+                'en': 0.9,
+                'hi': 0.7,  // Slower for Hindi
+                'ta': 0.7,  // Slower for Tamil
+                'te': 0.7,  // Slower for Telugu
+                'bn': 0.7,  // Slower for Bengali
+                'mr': 0.7,  // Slower for Marathi
+                'gu': 0.7,  // Slower for Gujarati
+            };
+            return rates[language] || 0.9;
+        }
+        
+        function updateCallStatus(status) {
+            document.getElementById('callStatus').textContent = status;
+        }
+        
+        function showTranscript(text) {
+            document.getElementById('transcriptText').textContent = text;
+            document.getElementById('callTranscript').classList.add('show');
+        }
+        
+        function hideTranscript() {
+            document.getElementById('callTranscript').classList.remove('show');
+        }
+        
+        function updateSelectedParcelInfo() {
+            if (selectedParcel) {
+                document.getElementById('selectedParcelText').textContent = 
+                    `${selectedParcel.id} - ${selectedParcel.destination}`;
+                document.getElementById('selectedParcelInfo').style.display = 'block';
+            }
+        }
+        
+        function updateInputPlaceholder() {
+            const config = languageConfig[currentLanguage];
+            document.getElementById('messageInput').placeholder = config.placeholder;
+        }
+        
+        // Chat Voice Functions
+        function toggleChatVoice() {
+            if (!chatRecognition) {
+                alert('Voice recognition not supported in this browser. Please use Chrome or Edge.');
+                return;
+            }
+            
+            if (isChatListening) {
+                stopChatVoice();
+            } else {
+                startChatVoice();
+            }
+        }
+        
+        function startChatVoice() {
+            if (isChatListening) return;
+            
+            isChatListening = true;
+            const voiceBtn = document.getElementById('chatVoiceBtn');
+            voiceBtn.classList.add('listening');
+            voiceBtn.title = 'Listening... Click to stop';
+            
+            // Set language for recognition
+            const config = languageConfig[currentLanguage];
+            chatRecognition.lang = config.speechLang;
+            
+            try {
+                chatRecognition.start();
+                console.log('🎙️ Started chat voice recognition in', config.speechLang);
+            } catch (error) {
+                console.error('Failed to start chat voice recognition:', error);
+                stopChatVoice();
+            }
+        }
+        
+        function stopChatVoice() {
+            if (!isChatListening) return;
+            
+            isChatListening = false;
+            const voiceBtn = document.getElementById('chatVoiceBtn');
+            voiceBtn.classList.remove('listening');
+            voiceBtn.title = 'Voice input';
+            
+            if (chatRecognition) {
+                chatRecognition.stop();
+            }
+        }
+        
+        function handleChatVoiceResult(transcript) {
+            console.log('🗣️ Chat voice input:', transcript);
+            
+            // Add the transcript to the input field
+            const input = document.getElementById('messageInput');
+            input.value = transcript;
+            adjustTextareaHeight(input);
+            
+            // Enable send button
+            document.getElementById('sendBtn').disabled = false;
+            
+            // Auto-send if enabled (optional)
+            // sendMessage();
+        }
+        
+        function toggleAutoSpeak() {
+            autoSpeakEnabled = !autoSpeakEnabled;
+            const speakBtn = document.getElementById('speakBtn');
+            
+            if (autoSpeakEnabled) {
+                speakBtn.classList.add('active');
+                speakBtn.title = 'Auto-speak ON - Click to disable';
+                console.log('🔊 Auto-speak enabled');
+            } else {
+                speakBtn.classList.remove('active');
+                speakBtn.title = 'Auto-speak OFF - Click to enable';
+                console.log('🔇 Auto-speak disabled');
+            }
+        }
+        
+        function speakChatMessage(text, language) {
+            if (!autoSpeakEnabled || !synthesis) return;
+            
+            // Stop any ongoing speech
+            synthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = getOptimalSpeechRate(language);
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            // Set language-specific voice
+            const config = languageConfig[language];
+            if (config && config.speechLang) {
+                utterance.lang = config.speechLang;
+                
+                const voices = synthesis.getVoices();
+                const targetVoice = voices.find(voice => 
+                    voice.lang.startsWith(config.speechLang) || 
+                    voice.lang.startsWith(config.speechLang.split('-')[0])
+                );
+                
+                if (targetVoice) {
+                    utterance.voice = targetVoice;
+                    console.log(`🗣️ Speaking chat message in ${targetVoice.name} (${targetVoice.lang})`);
+                }
+            }
+            
+            synthesis.speak(utterance);
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('parcelDropdown');
+            const selector = document.getElementById('parcelSelector');
+            
+            if (!selector.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+        
+        // Load voices when available
+        if (synthesis) {
+            synthesis.onvoiceschanged = function() {
+                // Voices loaded
+            };
+        }
+    </script>
+</body>
+</html>
